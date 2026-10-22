@@ -1,8 +1,15 @@
-.PHONY: install lint test mlflow-ui prefect-ui train deploy api docker-build docker-run
+.PHONY: all install lint test mlflow-ui prefect-ui train deploy api docker-build docker-run
 
 export PREFECT_API_URL = http://127.0.0.1:4200/api
 
 IMAGE_NAME = abalone-api:0.0.1
+
+# Install, check, test, train, then build and run the Docker image (API + Prefect UI)
+# The training runs with an empty PREFECT_API_URL, so Prefect uses a temporary local server and `make prefect-ui` is not needed
+all: install lint test
+	$(MAKE) train PREFECT_API_URL=
+	$(MAKE) docker-build
+	$(MAKE) docker-run
 
 install:
 	uv sync

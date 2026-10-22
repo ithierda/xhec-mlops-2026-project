@@ -34,7 +34,9 @@ def batch_predict_workflow(input_path: str, output_path: str, artifacts_dirpath:
     model = load_pickle(f"{artifacts_dirpath}/model.pkl")
     dv = load_pickle(f"{artifacts_dirpath}/dv.pkl")
 
-    df = preprocess_data(load_data(input_path))
+    raw_df = load_data(input_path)
+    df = preprocess_data(raw_df)
+    logger.info(f"{len(raw_df) - len(df)} abalones with a height of 0 removed (no prediction for them)")
     x, _, _ = extract_x_y(df, dv=dv, with_target=False)
     df["rings_prediction"] = predict(x, model)
 
