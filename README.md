@@ -41,8 +41,17 @@ The project covers the full MLOps cycle: data exploration and experiment trackin
 
 ## ▶️ Run everything
 
+Once the dataset is in `data/abalone.csv` and Docker Desktop is running, a single command runs the whole project:
+
+```bash
+make all
+```
+
+It installs the environment, runs the code checks and the tests, trains the model, then builds and runs the Docker image. When it is up, the API docs are at http://localhost:8000/docs and the Prefect UI at http://localhost:4200 (stop with `Ctrl+C`). The training uses a temporary local Prefect server, so `make prefect-ui` is not needed.
+
 | Command | What it does |
 |---|---|
+| `make all` | Run everything below in order: install → lint → test → train → docker-build → docker-run |
 | `make install` | Install the dependencies and the pre-commit hooks |
 | `make lint` | Run the code quality checks (same as the CI) |
 | `make test` | Run the unit and API tests (also run by the CI) |
@@ -83,7 +92,7 @@ The training is a Prefect flow (`src/modelling/workflows.py`) made of tasks: loa
    make deploy
    ```
    - `Train model/Weekly training` retrains the model every Monday at midnight.
-   - `Batch predict/Hourly prediction` predicts the number of rings of every abalone in `data/abalone.csv` every hour with the saved model, and writes them to `data/predictions.csv`.
+   - `Batch predict/Hourly prediction` predicts the number of rings of every abalone in `data/abalone.csv` every hour with the saved model, and writes them to `data/predictions.csv`. Abalones with a height of 0 (data errors) are removed first, and their number is logged.
 
    Both appear in the UI under **Deployments**, where you can also start a run manually (**Run** → **Quick run**).
 
@@ -121,7 +130,7 @@ The tests check that the training code and the API work as expected. They use sm
 make test
 ```
 
-All 10 tests should pass. The tests are in the `tests/` folder:
+All 11 tests should pass. The tests are in the `tests/` folder:
 - `test_modelling.py`: unit tests for the training code (`src/modelling/`)
 - `test_api.py`: tests of the prediction API (`src/web_service/`), sending requests to the app without starting a server
 
@@ -135,6 +144,7 @@ All 10 tests should pass. The tests are in the `tests/` folder:
 | `test_pickle_round_trip` | A saved object (model or encoder) is loaded back exactly as it was |
 | `test_evaluate_model_computes_rmse` | The RMSE is 0 for perfect predictions and 2 when every prediction is off by 2 |
 | `test_train_model_learns_simple_relation` | The model learns a simple pattern (y = 2x) and predicts it for a new value |
+| `test_batch_predict_saves_one_prediction_per_abalone` | The batch prediction flow writes a csv with one prediction per abalone, using the saved model and encoder |
 
 **Prediction API (`test_api.py`)**
 
