@@ -1,6 +1,6 @@
 from config import DATA_DIRPATH, MODELS_DIRPATH
 from prefect import serve
-from workflows import train_model_workflow
+from workflows import batch_predict_workflow, train_model_workflow
 
 if __name__ == "__main__":
     train_deployment = train_model_workflow.to_deployment(
@@ -14,4 +14,15 @@ if __name__ == "__main__":
         },
     )
 
-    serve(train_deployment)
+    predict_deployment = batch_predict_workflow.to_deployment(
+        name="Hourly prediction",
+        version="0.1.0",
+        tags=["prediction"],
+        interval=3600,  # every hour
+        parameters={
+            "input_path": str(DATA_DIRPATH / "abalone.csv"),
+            "output_path": str(DATA_DIRPATH / "predictions.csv"),
+        },
+    )
+
+    serve(train_deployment, predict_deployment)

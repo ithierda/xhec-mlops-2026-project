@@ -5,7 +5,7 @@ from prefect import flow
 from preprocessing import extract_x_y, load_data, preprocess_data
 from sklearn.model_selection import train_test_split
 from training import evaluate_model, train_model
-from utils import pickle_object
+from utils import load_pickle, pickle_object
 
 
 @flow(name="Train model")
@@ -26,3 +26,17 @@ def train_model_workflow(trainset_path: str, artifacts_dirpath: str = str(MODELS
     pickle_object(dv, f"{artifacts_dirpath}/dv.pkl")
     logger.info(f"Model and DictVectorizer saved in {artifacts_dirpath}")
     return rmse
+
+
+@flow(name="Batch predict")
+def batch_predict_workflow(input_path: str, output_path: str, artifacts_dirpath: str = str(MODELS_DIRPATH)) -> None:
+    """Predict the number of rings of every abalone in a csv file with the saved model, and save the predictions."""
+    model = load_pickle(f"{artifacts_dirpath}/model.pkl")
+    dv = load_pickle(f"{artifacts_dirpath}/dv.pkl")
+
+    df = preprocess_data(load_data(input_path))
+    x, _, _ = extract_x_y(df, dv=dv, with_target=False)
+    df["rings_prediction"] = predict(x, model)
+
+    df.to_csv(output_path, index=False)
+    logger.info(f"{len(df)} predictions saved in {output_path}")
