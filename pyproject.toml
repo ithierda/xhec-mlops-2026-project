@@ -54,7 +54,13 @@ order-by-type = true
 
 [dependency-groups]
 dev = [
+    "httpx<0.28",
     "nbstripout>=0.9.1",
     "pre-commit>=4.7.0",
+    "pytest>=9.1.1",
     "ruff>=0.17.1",
 ]
+
+[tool.pytest.ini_options]
+pythonpath = [".", "src/modelling"]
+testpaths = ["tests"]

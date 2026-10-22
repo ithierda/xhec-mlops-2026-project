@@ -17,8 +17,8 @@ The project covers the full MLOps cycle: data exploration and experiment trackin
 |---|---|
 | Erwan Franco--Tetu | [@erwanfrancotetu](https://github.com/erwanfrancotetu) |
 | Licheng Xiong | [@Licheng1004](https://github.com/Licheng1004) |
-| | [@ithierda](https://github.com/ithierda) |
-| | [@bhaveshchauhan2407](https://github.com/bhaveshchauhan2407) |
+| Ithier d'Aramon | [@ithierda](https://github.com/ithierda) |
+| Bhavesh Chauhan | [@bhaveshchauhan2407](https://github.com/bhaveshchauhan2407) |
 
 ## 🚀 Setup
 
@@ -45,6 +45,7 @@ The project covers the full MLOps cycle: data exploration and experiment trackin
 |---|---|
 | `make install` | Install the dependencies and the pre-commit hooks |
 | `make lint` | Run the code quality checks (same as the CI) |
+| `make test` | Run the unit and API tests (also run by the CI) |
 | `make mlflow-ui` | Open the MLflow UI to compare the notebook experiments (http://localhost:5000) |
 | `make prefect-ui` | Start the Prefect server and UI (http://localhost:4200) |
 | `make train` | Train the model with the Prefect flow and save the pickles |
@@ -109,15 +110,48 @@ The API (`src/web_service/`) loads the model and the encoder, validates the inpu
 
 To run the API without Docker: `make api`, then open http://localhost:8000/docs.
 
+### 4. Run the tests
+
+The tests check that the training code and the API work as expected. They use small fake data built inside the tests, so they don't need the dataset and also run in the CI on every push and pull request.
+
+```bash
+make test
+```
+
+All 10 tests should pass. The tests are in the `tests/` folder:
+- `test_modelling.py`: unit tests for the training code (`src/modelling/`)
+- `test_api.py`: tests of the prediction API (`src/web_service/`), sending requests to the app without starting a server
+
+**Training code (`test_modelling.py`)**
+
+| Test | What it checks |
+|---|---|
+| `test_rename_columns_to_snake_case` | Column names from the raw csv are cleaned up (`Whole weight` → `whole_weight`) |
+| `test_filter_outliers_removes_zero_height` | Abalones with a height of 0 (data errors) are removed, the others are kept |
+| `test_extract_x_y_one_hot_encodes_sex` | `sex` (M/F/I) is turned into numeric columns the model can use, without losing rows |
+| `test_pickle_round_trip` | A saved object (model or encoder) is loaded back exactly as it was |
+| `test_evaluate_model_computes_rmse` | The RMSE is 0 for perfect predictions and 2 when every prediction is off by 2 |
+| `test_train_model_learns_simple_relation` | The model learns a simple pattern (y = 2x) and predicts it for a new value |
+
+**Prediction API (`test_api.py`)**
+
+| Test | What it checks |
+|---|---|
+| `test_health_check` | The app starts and `GET /` answers |
+| `test_predict_valid_abalone` | A valid abalone gets a positive predicted number of rings (status 201) |
+| `test_predict_rejects_unknown_sex` | A `sex` other than M, F or I is rejected (status 422) |
+| `test_predict_rejects_negative_measurement` | A negative measurement is rejected (status 422) |
+
 ## 📁 Project structure
 
 ```
-├── .github/workflows/ci.yaml   <- CI: installs the dependencies and runs the pre-commit checks
+├── .github/workflows/ci.yaml   <- CI: installs the dependencies, runs the pre-commit checks and the tests
 ├── bin/run_services.sh         <- Starts the Prefect server and the API in the container
 ├── notebooks/                  <- EDA and modelling notebooks (MLflow tracking)
 ├── src/
 │   ├── modelling/              <- Training: config, preprocessing, training, predicting, Prefect flow and deployment
 │   └── web_service/            <- FastAPI app, Pydantic models, inference and the saved model/encoder
+├── tests/                      <- Unit tests (training code) and API tests
 ├── Dockerfile.app              <- Docker image of the API
 ├── requirements_app.txt        <- Minimal dependencies of the Docker image
 ├── Makefile                    <- One command per step
