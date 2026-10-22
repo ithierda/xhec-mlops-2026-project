@@ -27,3 +27,7 @@ jobs:
 
       - name: Check code quality (formatting, linting)
         run: uv run pre-commit run --all-files --show-diff-on-failure
+
+      
+      - name: Run tests
+        run: uv run pytest

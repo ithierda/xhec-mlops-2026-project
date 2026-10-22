@@ -1,4 +1,4 @@
-.PHONY: install lint mlflow-ui prefect-ui train deploy api docker-build docker-run
+.PHONY: install lint test mlflow-ui prefect-ui train deploy api docker-build docker-run
 
 export PREFECT_API_URL = http://127.0.0.1:4200/api
 
@@ -10,6 +10,9 @@ install:
 
 lint:
 	uv run pre-commit run --all-files
+
+test:
+	uv run pytest
 
 mlflow-ui:
 	uv run mlflow ui --backend-store-uri mlruns
