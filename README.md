@@ -4,68 +4,64 @@
 
 [![Python Version](https://img.shields.io/badge/python-3.11-blue.svg)]()
 [![Linting: ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/charliermarsh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
-[![Pre-commit](https://img.shields.io/badge/pre--commit-enabled-informational?logo=pre-commit&logoColor=white)](https://github.com/artefactory/xhec-mlops-project-student/blob/main/.pre-commit-config.yaml)
+[![Pre-commit](https://img.shields.io/badge/pre--commit-enabled-informational?logo=pre-commit&logoColor=white)](.pre-commit-config.yaml)
 </div>
 
-## 🎯 Project Overview
+Predict the age of an abalone (number of shell rings, age = rings + 1.5 years) from simple physical measurements, instead of cutting, staining and counting the rings under a microscope.
 
-Welcome to your MLOps project! In this hands-on project, you'll build a complete machine learning system to predict the age of abalone (a type of sea snail) using physical measurements instead of the traditional time-consuming method of counting shell rings under a microscope.
+The project covers the full MLOps cycle: data exploration and experiment tracking (MLflow), training modules orchestrated with Prefect (with a weekly retraining deployment), and a FastAPI prediction API running in Docker.
 
-**Your Mission**: Transform a simple ML model into a production-ready system with automated training, deployment, and prediction capabilities.
+## 👥 Team
 
-## 📊 About the Dataset
+| Name | GitHub |
+|---|---|
+| Erwan Franco--Tetu | [@erwanfrancotetu](https://github.com/erwanfrancotetu) |
+| Licheng Xiong | [@Licheng1004](https://github.com/Licheng1004) |
+| | [@ithierda](https://github.com/ithierda) |
+| | [@bhaveshchauhan2407](https://github.com/bhaveshchauhan2407) |
 
-Traditionally, determining an abalone's age requires:
-1. Cutting the shell through the cone
-2. Staining it
-3. Counting rings under a microscope (very time-consuming!)
+## 🚀 Setup
 
-**Your Goal**: Use easier-to-obtain physical measurements (shell weight, diameter, etc.) to predict the age automatically.
+**Prerequisites:** Python 3.11, [uv](https://docs.astral.sh/uv/getting-started/installation/), [Docker Desktop](https://www.docker.com/products/docker-desktop/) and `make`.
 
-📥 **Download**: Get the dataset from the [Kaggle page](https://www.kaggle.com/datasets/rodolfomendes/abalone-dataset)
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/ithierda/xhec-mlops-2026-project.git
+   cd xhec-mlops-2026-project
+   ```
 
-
-## 🚀 Quick Start
-
-### Prerequisites
-- GitHub account
-- [Kaggle account](https://www.kaggle.com/account/login?phase=startRegisterTab&returnUrl=%2F) (for dataset download)
-- Python 3.11
-
-### Setup Steps
-
-1. **Fork this repository**
-   - ⚠️ **Important**: Uncheck "Copy the `main` branch only" to get all project branches
-
-2. **Add your team members** as admins to your forked repository
-
-3. **Install the prerequisites**: Python 3.11, [uv](https://docs.astral.sh/uv/getting-started/installation/), [Docker Desktop](https://www.docker.com/products/docker-desktop/) and `make`
-
-4. **Set up your development environment** (creates `.venv` with all the dependencies and installs the pre-commit hooks):
+2. **Install the environment** (creates `.venv` with all the dependencies and installs the pre-commit hooks)
    ```bash
    make install
    source .venv/bin/activate # on Windows: .venv\Scripts\activate
    ```
    Without `make`: `uv sync && uv run pre-commit install`
 
-5. **Download the dataset** from [Kaggle](https://www.kaggle.com/datasets/rodolfomendes/abalone-dataset) and save it as `data/abalone.csv` (the `data/` folder is not versioned)
+3. **Download the dataset** from [Kaggle](https://www.kaggle.com/datasets/rodolfomendes/abalone-dataset) and save it as `data/abalone.csv` (the `data/` folder is not versioned).
 
-6. **Check code quality** (formatting, linting, notebook outputs, lockfile), the same checks as the CI:
-   ```bash
-   make lint
-   ```
+## ▶️ Run everything
 
-### Explore the data and track experiments
+| Command | What it does |
+|---|---|
+| `make install` | Install the dependencies and the pre-commit hooks |
+| `make lint` | Run the code quality checks (same as the CI) |
+| `make mlflow-ui` | Open the MLflow UI to compare the notebook experiments (http://localhost:5000) |
+| `make prefect-ui` | Start the Prefect server and UI (http://localhost:4200) |
+| `make train` | Train the model with the Prefect flow and save the pickles |
+| `make deploy` | Serve the deployment that retrains the model every Monday |
+| `make api` | Run the API locally (http://localhost:8000/docs) |
+| `make docker-build` | Build the Docker image of the API |
+| `make docker-run` | Run the API + Prefect server in Docker |
 
-The notebooks are in `notebooks/` (run them from that folder): `eda.ipynb` (data exploration) and `modelling.ipynb` (first model, tracked with MLflow). To compare the MLflow runs:
+### 1. Explore the data and track experiments
 
-```bash
-make mlflow-ui
-```
+The notebooks are in `notebooks/` (run them from that folder):
+- `eda.ipynb`: data exploration and conclusions
+- `modelling.ipynb`: first model (linear regression, test RMSE ≈ 2.2 rings), experiments tracked with MLflow
 
-Then open http://localhost:5000.
+To compare the MLflow runs: `make mlflow-ui`, then open http://localhost:5000.
 
-### Train the model with Prefect
+### 2. Train the model with Prefect
 
 The training is a Prefect flow (`src/modelling/workflows.py`) made of tasks: load → preprocess → extract features → train → predict → evaluate. It saves the model (`model.pkl`) and the encoder (`dv.pkl`) in `src/web_service/local_objects/`, where the API loads them.
 
@@ -87,149 +83,48 @@ The training is a Prefect flow (`src/modelling/workflows.py`) made of tasks: loa
    ```
    The deployment `Train model/Weekly training` appears in the UI under **Deployments**, where you can also start a run manually (**Run** → **Quick run**).
 
-## 📋 What You'll Build
+### 3. Predict with the API in Docker
 
-By the end of this project, you'll have created:
+The API (`src/web_service/`) loads the model and the encoder, validates the inputs with Pydantic and returns the predicted number of rings. The Docker image runs both the API and a Prefect server (`bin/run_services.sh`).
 
-### 🤖 **Automated ML Pipeline**
-- Training workflows using Prefect
-- Automatic model retraining on schedule
-- Reproducible model and data processing
+1. **Build and run the container** (stop `make prefect-ui` first if it is running, as both use port 4200):
+   ```bash
+   make docker-build
+   make docker-run
+   ```
+   - API documentation: http://localhost:8000/docs
+   - Prefect UI: http://localhost:4200
 
-### 🌐 **Prediction API**
-- REST API for real-time predictions
-- Input validation with Pydantic
-- Docker containerization
+2. **Make a prediction** from the docs page (**POST /predict** → **Try it out**) or with `curl`:
+   ```bash
+   curl -X POST http://localhost:8000/predict \
+     -H "Content-Type: application/json" \
+     -d '{"sex": "M", "length": 0.455, "diameter": 0.365, "height": 0.095, "whole_weight": 0.514, "shucked_weight": 0.2245, "viscera_weight": 0.101, "shell_weight": 0.15}'
+   ```
+   Response (status 201):
+   ```json
+   {"rings_prediction": 9.22}
+   ```
+   `sex` must be `M`, `F` or `I` (infant) and all measurements must be positive, otherwise the API returns a 422 error.
 
-### 📊 **Production-Ready Code**
-- Clean, well-documented code
-- Automated testing and formatting
-- Proper error handling
+To run the API without Docker: `make api`, then open http://localhost:8000/docs.
 
-## 📝 How to Work on This Project
+## 📁 Project structure
 
-### The Branch-by-Branch Approach
-
-This project is organized into numbered branches, each representing a step in building your MLOps system. Think of it like a guided tutorial where each branch teaches you something new!
-
-**Here's how it works**:
-
-1. **Each branch = One pull request** with specific tasks
-2. **Follow the numbers** (branch_0, branch_1, etc.) in order
-3. **Read the PR instructions** (PR_0.md, PR_1.md, etc.) before starting
-4. **Complete all TODOs** in that branch's code
-5. **Create a pull request** when done
-6. **Merge and move to the next branch**
-
-### Step-by-Step Workflow
-
-For each numbered branch:
-
-```bash
-# Switch to the branch
-git checkout branch_number_i
-
-# Get latest changes (except for branch_0)
-git pull origin main
-# Note: A VIM window might open - just type ":wq" to close it
-
-# Push your branch
-git push
+```
+├── .github/workflows/ci.yaml   <- CI: installs the dependencies and runs the pre-commit checks
+├── bin/run_services.sh         <- Starts the Prefect server and the API in the container
+├── notebooks/                  <- EDA and modelling notebooks (MLflow tracking)
+├── src/
+│   ├── modelling/              <- Training: config, preprocessing, training, predicting, Prefect flow and deployment
+│   └── web_service/            <- FastAPI app, Pydantic models, inference and the saved model/encoder
+├── Dockerfile.app              <- Docker image of the API
+├── requirements_app.txt        <- Minimal dependencies of the Docker image
+├── Makefile                    <- One command per step
+└── pyproject.toml / uv.lock    <- Project dependencies (uv)
 ```
 
-Then:
-1. 📖 Read the PR_i.md file carefully
-2. 💻 Complete all the TODOs in the code
-3. 🔧 Test your changes
-4. 📤 Open **ONE** pull request to your main branch
-5. ✅ Merge the pull request
-6. 🔄 Move to the next branch
+## 💡 Development
 
-> **💡 Pro Tip**: Always integrate your previous work when starting a new branch (except branch_0)!
-
-### 🔍 Understanding Pull Requests
-
-Pull Requests (PRs) are how you propose and review changes before merging them into your main codebase. They're essential for team collaboration!
-
-**Important**: When creating a PR, make sure you're merging into YOUR forked repository, not the original:
-
-❌ **Wrong** (merging to original repo):
-![PR Wrong](assets/PR_wrong.png)
-
-✅ **Correct** (merging to your fork):
-![PR Right](assets/PR_right.png)
-
-## 💡 Development Tips
-
-### Managing Dependencies
-
-Use uv to manage dependencies. Install or update packages with:
-
-```bash
-uv add <package>==<version>
-```
-
-Then sync the environment and regenerate the dependency files:
-
-```bash
-uv sync
-```
-
-### Code Quality
-- The pre-commit hooks will automatically format your code
-- Remove all TODOs and unused code before final submission
-- Use clear variable names and add docstrings
-
-## 📊 Evaluation Criteria
-
-Your project will be evaluated on:
-
-### 🔍 **Code Quality**
-- Clean, readable code structure
-- Proper naming conventions
-- Good use of docstrings and type hints
-
-### 🎨 **Code Formatting**
-- Consistent style (automated with pre-commit)
-- Professional presentation
-
-### ⚙️ **Functionality**
-- Code runs without errors
-- All requirements implemented correctly
-
-### 📖 **Documentation & Reproducibility**
-- Clear README with setup instructions
-- Team member names and GitHub usernames
-- Step-by-step instructions to run everything
-
-### 🤝 **Collaboration**
-- Effective use of Pull Requests
-- Good teamwork and communication
-
----
-
-## 🎯 Final Deliverables Checklist
-
-When you're done, your repository should contain:
-
-✅ **Automated Training Pipeline**
-- [ ] Prefect workflows for model training
-- [ ] Separate modules for training and inference
-- [ ] Reproducible model and encoder generation
-
-✅ **Automated Deployment**
-- [ ] Prefect deployment for regular retraining
-
-✅ **Production API**
-- [ ] Working REST API for predictions
-- [ ] Pydantic input validation
-- [ ] Docker containerization
-
-✅ **Professional Documentation**
-- [ ] Updated README with team info
-- [ ] Clear setup and run instructions
-- [ ] All TODOs removed from code
-
----
-
-**Ready to start? Head to branch_0 and read PR_0.md for your first task! 🚀**
+- Add a dependency with `uv add <package>==<version>` (updates `pyproject.toml` and `uv.lock`), then `uv sync`.
+- The pre-commit hooks format and lint the code (ruff), strip the notebook outputs (nbstripout) and check the lockfile at each commit. Run them on all files with `make lint`.

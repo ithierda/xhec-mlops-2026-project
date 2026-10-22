@@ -1,0 +1,7 @@
+.git
+.venv
+.ruff_cache
+data
+mlruns
+notebooks
+**/__pycache__
