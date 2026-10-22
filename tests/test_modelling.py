@@ -3,9 +3,11 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import pytest
+from prefect.testing.utilities import prefect_test_harness
 from preprocessing import extract_x_y, filter_outliers, rename_columns
 from training import evaluate_model, train_model
 from utils import load_pickle, pickle_object
+from workflows import batch_predict_workflow
 
 
 @pytest.fixture
@@ -68,3 +70,19 @@ def test_train_model_learns_simple_relation() -> None:
     y = 2 * x.ravel()
     model = train_model.fn(x, y)
     assert model.predict([[10.0]])[0] == pytest.approx(20)
+
+
+def test_batch_predict_saves_one_prediction_per_abalone(abalones: pd.DataFrame, tmp_path: Path) -> None:
+    """The batch flow writes a csv with a prediction for every abalone, using the saved model and DictVectorizer."""
+    x, y, dv = extract_x_y.fn(abalones)
+    pickle_object(train_model.fn(x, y), tmp_path / "model.pkl")
+    pickle_object(dv, tmp_path / "dv.pkl")
+    abalones.to_csv(tmp_path / "input.csv", index=False)
+
+    # Temporary Prefect database, so the flow runs without a Prefect server
+    with prefect_test_harness():
+        batch_predict_workflow(str(tmp_path / "input.csv"), str(tmp_path / "predictions.csv"), str(tmp_path))
+
+    predictions = pd.read_csv(tmp_path / "predictions.csv")
+    assert len(predictions) == len(abalones)
+    assert predictions["rings_prediction"].notna().all()

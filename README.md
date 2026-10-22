@@ -78,11 +78,14 @@ The training is a Prefect flow (`src/modelling/workflows.py`) made of tasks: loa
    ```
    The test RMSE is logged, and the flow run appears in the UI under **Flow Runs**.
 
-3. **Retrain regularly**: serve the deployment that retrains the model every Monday at midnight (keep this terminal open):
+3. **Retrain and predict regularly**: serve the two deployments (keep this terminal open):
    ```bash
    make deploy
    ```
-   The deployment `Train model/Weekly training` appears in the UI under **Deployments**, where you can also start a run manually (**Run** → **Quick run**).
+   - `Train model/Weekly training` retrains the model every Monday at midnight.
+   - `Batch predict/Hourly prediction` predicts the number of rings of every abalone in `data/abalone.csv` every hour with the saved model, and writes them to `data/predictions.csv`.
+
+   Both appear in the UI under **Deployments**, where you can also start a run manually (**Run** → **Quick run**).
 
 ### 3. Predict with the API in Docker
 
